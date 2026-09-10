@@ -168,10 +168,6 @@
             <h3 class="text-lg font-bold text-blue-400 mb-5" id="schedule-modal-title"><i class="fas fa-calendar-plus mr-2"></i>스케줄 등록</h3>
             <div class="space-y-4">
                 <div>
-                    <label class="block text-xs font-bold text-slate-400 mb-1">날짜 (클릭하여 선택)</label>
-                    <input type="date" id="schedule-date" class="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded text-sm text-white focus:outline-none focus:border-blue-500 cursor-pointer">
-                </div>
-                <div>
                     <label class="block text-xs font-bold text-slate-400 mb-1">1. 분류 (제작 진행 항목)</label>
                     <select id="schedule-category" class="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded text-sm text-white focus:outline-none focus:border-blue-500">
                         <option value="기획/시나리오">기획/시나리오</option>
@@ -206,6 +202,10 @@
                     </div>
                     <img id="schedule-img-preview" class="hidden mt-3 h-32 object-cover rounded border border-slate-600 w-full">
                 </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-400 mb-1">4. 날짜 (클릭하여 선택)</label>
+                    <input type="date" id="schedule-date" class="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded text-sm text-white focus:outline-none focus:border-blue-500 cursor-pointer">
+                </div>
             </div>
             <div class="mt-6 flex gap-3">
                 <button onclick="closeScheduleModal()" class="flex-1 bg-slate-700 hover:bg-slate-600 text-white font-bold px-4 py-2.5 rounded text-sm transition">취소</button>
@@ -221,16 +221,16 @@
             <h3 class="text-lg font-bold text-yellow-400 mb-5" id="log-modal-title"><i class="fas fa-pen-alt mr-2"></i>현장 로그 작성</h3>
             <div class="space-y-4">
                 <div>
-                    <label class="block text-xs font-bold text-slate-400 mb-1">날짜 (클릭하여 선택)</label>
-                    <input type="date" id="log-date" class="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded text-sm text-white focus:outline-none focus:border-yellow-500 cursor-pointer">
-                </div>
-                <div>
                     <label class="block text-xs font-bold text-slate-400 mb-1">제목</label>
                     <input type="text" id="log-title" class="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded text-sm text-white focus:outline-none focus:border-yellow-500" placeholder="로그 제목 (예: 1회차 현장 회의록)">
                 </div>
                 <div>
                     <label class="block text-xs font-bold text-slate-400 mb-1">내용</label>
                     <textarea id="log-content" class="w-full h-32 px-3 py-2 bg-slate-900 border border-slate-600 rounded text-sm text-white focus:outline-none focus:border-yellow-500 resize-none" placeholder="공지, 회의록, 현장 기록 등 상세 내용"></textarea>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-400 mb-1">날짜 (클릭하여 선택)</label>
+                    <input type="date" id="log-date" class="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded text-sm text-white focus:outline-none focus:border-yellow-500 cursor-pointer">
                 </div>
             </div>
             <div class="mt-6 flex gap-3">
@@ -246,10 +246,6 @@
             <button onclick="closeBudgetModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white text-xl"><i class="fas fa-times"></i></button>
             <h3 class="text-lg font-bold text-emerald-400 mb-5" id="budget-modal-title"><i class="fas fa-wallet mr-2"></i>예산 내역 작성</h3>
             <div class="space-y-4">
-                <div>
-                    <label class="block text-xs font-bold text-slate-400 mb-1">날짜 (클릭하여 선택)</label>
-                    <input type="date" id="budget-date" class="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded text-sm text-white focus:outline-none focus:border-emerald-500 cursor-pointer">
-                </div>
                 <div class="grid grid-cols-2 gap-2">
                     <div>
                         <label class="block text-xs font-bold text-slate-400 mb-1">구분</label>
@@ -277,6 +273,10 @@
                         <button onclick="removeBudgetImg()" type="button" id="btn-remove-budget-img" class="hidden text-xs text-red-400 hover:text-red-300 underline">삭제</button>
                     </div>
                     <img id="budget-img-preview" class="hidden mt-3 h-32 object-cover rounded border border-slate-600 w-full">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-400 mb-1">날짜 (클릭하여 선택)</label>
+                    <input type="date" id="budget-date" class="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded text-sm text-white focus:outline-none focus:border-emerald-500 cursor-pointer">
                 </div>
             </div>
             <div class="mt-6 flex gap-3">
