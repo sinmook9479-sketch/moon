@@ -1,0 +1,492 @@
+
+
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>제작 현황판</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@500;700&family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#F1EDE6;
+    --paper-card:#FBF9F4;
+    --ink:#23261F;
+    --ink-soft:#565A4E;
+    --forest:#3E5641;
+    --forest-dark:#2C3F30;
+    --ochre:#B98A3D;
+    --rust:#9B4A36;
+    --line:#D8D2C4;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--paper);
+    color:var(--ink);
+    font-family:'Noto Sans KR', sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{
+    max-width:880px;
+    margin:0 auto;
+    padding:40px 24px 80px;
+  }
+  header.top{
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-end;
+    border-bottom:3px solid var(--ink);
+    padding-bottom:18px;
+    margin-bottom:28px;
+    flex-wrap:wrap;
+    gap:12px;
+  }
+  header.top h1{
+    font-family:'Noto Serif KR', serif;
+    font-weight:700;
+    font-size:28px;
+    margin:0 0 6px;
+    letter-spacing:-0.01em;
+  }
+  header.top p{
+    margin:0;
+    color:var(--ink-soft);
+    font-size:13.5px;
+  }
+  .sync-note{
+    font-size:12px;
+    color:var(--ink-soft);
+    background:var(--paper-card);
+    border:1px solid var(--line);
+    padding:6px 10px;
+    border-radius:4px;
+  }
+
+  /* project tabs - clapperboard feel */
+  .tabs{
+    display:flex;
+    gap:6px;
+    flex-wrap:wrap;
+    align-items:flex-end;
+    margin-bottom:0;
+  }
+  .tab{
+    position:relative;
+    padding:10px 18px 9px;
+    background:#E4DECF;
+    border:1px solid var(--line);
+    border-bottom:none;
+    border-radius:6px 6px 0 0;
+    font-size:14px;
+    font-weight:500;
+    color:var(--ink-soft);
+    cursor:pointer;
+    clip-path:polygon(8% 0, 100% 0, 92% 100%, 0% 100%);
+    padding-left:24px;
+    padding-right:24px;
+  }
+  .tab.active{
+    background:var(--paper-card);
+    color:var(--ink);
+    font-weight:700;
+    box-shadow:0 -2px 0 var(--forest) inset;
+  }
+  .tab .del-x{
+    margin-left:10px;
+    opacity:0.4;
+    font-size:12px;
+  }
+  .tab .del-x:hover{opacity:1; color:var(--rust);}
+  .tab-add{
+    padding:10px 16px;
+    font-size:14px;
+    color:var(--forest);
+    cursor:pointer;
+    border:1px dashed var(--line);
+    border-radius:6px 6px 0 0;
+    background:transparent;
+  }
+
+  .board{
+    background:var(--paper-card);
+    border:1px solid var(--line);
+    border-radius:0 8px 8px 8px;
+    padding:26px 28px 28px;
+  }
+  .board-title-row{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-bottom:18px;
+    gap:12px;
+  }
+  .board-title-row input.proj-name{
+    font-family:'Noto Serif KR', serif;
+    font-size:19px;
+    font-weight:700;
+    border:none;
+    background:transparent;
+    color:var(--ink);
+    width:100%;
+    padding:2px 0;
+    border-bottom:1px solid transparent;
+  }
+  .board-title-row input.proj-name:focus{
+    outline:none;
+    border-bottom:1px solid var(--forest);
+  }
+
+  /* filmstrip progress */
+  .filmstrip-row{
+    display:flex;
+    align-items:center;
+    gap:14px;
+    margin-bottom:22px;
+  }
+  .filmstrip{
+    display:flex;
+    gap:4px;
+    flex-wrap:wrap;
+    flex:1;
+  }
+  .sprocket{
+    width:16px;
+    height:16px;
+    border-radius:3px;
+    border:1.5px solid var(--forest);
+    background:transparent;
+  }
+  .sprocket.filled{
+    background:var(--forest);
+  }
+  .progress-label{
+    font-size:12.5px;
+    color:var(--ink-soft);
+    white-space:nowrap;
+    font-variant-numeric:tabular-nums;
+  }
+
+  table{
+    width:100%;
+    border-collapse:collapse;
+  }
+  thead th{
+    text-align:left;
+    font-size:12px;
+    font-weight:700;
+    color:var(--ink-soft);
+    padding:0 8px 8px;
+    border-bottom:1px solid var(--line);
+  }
+  tbody td{
+    padding:10px 8px;
+    border-bottom:1px solid var(--line);
+    font-size:14px;
+    vertical-align:middle;
+  }
+  tbody tr:last-child td{border-bottom:none;}
+  .status-dot{
+    width:10px;height:10px;border-radius:50%;
+    display:inline-block;
+    margin-right:7px;
+    vertical-align:middle;
+  }
+  .status-pill{
+    display:inline-flex;
+    align-items:center;
+    border:1px solid var(--line);
+    border-radius:20px;
+    padding:5px 10px 5px 8px;
+    font-size:12.5px;
+    cursor:pointer;
+    background:#fff;
+    user-select:none;
+  }
+  .status-대기 .status-dot{background:#B7B2A2;}
+  .status-진행중 .status-dot{background:var(--ochre);}
+  .status-완료 .status-dot{background:var(--forest);}
+
+  td.task-name input, td input[type=text], td input[type=date]{
+    border:none;
+    background:transparent;
+    font-size:14px;
+    font-family:inherit;
+    color:var(--ink);
+    width:100%;
+    padding:4px 2px;
+    border-radius:3px;
+  }
+  td input:focus{outline:none; background:#F1EDE1;}
+  td.task-name{font-weight:500; min-width:180px;}
+  td.assignee{width:80px;}
+  td.due{width:120px;}
+  td.action{width:32px; text-align:center;}
+  .del-btn{
+    color:var(--ink-soft);
+    opacity:0.5;
+    cursor:pointer;
+    font-size:15px;
+  }
+  .del-btn:hover{opacity:1; color:var(--rust);}
+
+  .add-row{
+    margin-top:14px;
+    display:flex;
+    gap:8px;
+  }
+  .add-row input{
+    flex:1;
+    padding:9px 10px;
+    border:1px solid var(--line);
+    border-radius:5px;
+    font-size:14px;
+    font-family:inherit;
+    background:#fff;
+  }
+  .add-row button{
+    background:var(--forest);
+    color:#fff;
+    border:none;
+    border-radius:5px;
+    padding:0 18px;
+    font-size:14px;
+    font-weight:500;
+    cursor:pointer;
+    font-family:inherit;
+  }
+  .add-row button:hover{background:var(--forest-dark);}
+  .empty{
+    color:var(--ink-soft);
+    font-size:13.5px;
+    padding:24px 4px;
+    text-align:center;
+    border:1px dashed var(--line);
+    border-radius:6px;
+  }
+  .loading{padding:60px 0; text-align:center; color:var(--ink-soft); font-size:14px;}
+</style>
+</head>
+<body>
+<div class="wrap" id="app">
+  <div class="loading">불러오는 중…</div>
+</div>
+
+<script>
+const STORAGE_KEY = 'production-dashboard:v1';
+let state = null;
+let activeProjectId = null;
+
+const defaultState = () => ({
+  projects: [
+    {
+      id: 'p1',
+      name: '「문턱」(THRESHOLD)',
+      tasks: [
+        { id: 't1', name: '기획서·시놉시스·감독의 글 정리', assignee: '', due: '', status: '완료' },
+        { id: 't2', name: '스토리보드 39컷 완성', assignee: '', due: '', status: '완료' },
+        { id: 't3', name: '포스터 로고타입 3종 스타일 통일', assignee: '', due: '', status: '진행중' },
+        { id: 't4', name: '포스터 초록색 인용부호 톤 수정', assignee: '', due: '', status: '대기' },
+        { id: 't5', name: '포스터 3단 사진 색보정 통일 및 이음선 보정', assignee: '', due: '', status: '대기' },
+        { id: 't6', name: '출연자 이름 표기 확인 (최병율/최병열)', assignee: '', due: '', status: '대기' },
+        { id: 't7', name: '색보정 마무리 (2.39:1 Scope)', assignee: '', due: '', status: '진행중' },
+        { id: 't8', name: 'SFX 추가 및 5.1 서라운드 믹싱', assignee: '', due: '', status: '대기' },
+        { id: 't9', name: 'DCP 제작', assignee: '', due: '', status: '대기' },
+        { id: 't10', name: '영화제용 포스터 별도 버전 검토', assignee: '', due: '', status: '대기' },
+        { id: 't11', name: '영화제 본선 제출', assignee: '', due: '', status: '대기' },
+      ]
+    }
+  ]
+});
+
+function uid(){ return 'x' + Math.random().toString(36).slice(2,9); }
+
+async function load(){
+  try{
+    const res = await window.storage.get(STORAGE_KEY, true);
+    state = res ? JSON.parse(res.value) : defaultState();
+  }catch(e){
+    state = defaultState();
+  }
+  if(!state.projects.length){
+    activeProjectId = null;
+  } else {
+    activeProjectId = state.projects[0].id;
+  }
+  render();
+}
+
+async function save(){
+  try{
+    await window.storage.set(STORAGE_KEY, JSON.stringify(state), true);
+  }catch(e){
+    console.error('저장 실패', e);
+  }
+}
+
+function cycleStatus(s){
+  return s === '대기' ? '진행중' : s === '진행중' ? '완료' : '대기';
+}
+
+function getActiveProject(){
+  return state.projects.find(p => p.id === activeProjectId);
+}
+
+function render(){
+  const app = document.getElementById('app');
+  if(!state.projects.length){
+    app.innerHTML = `
+      <header class="top">
+        <div><h1>제작 현황판</h1><p>SCNTV 프로덕션 트래커 · 팀 공유용</p></div>
+      </header>
+      <div class="add-row" style="margin-bottom:16px;">
+        <input id="new-proj-input" type="text" placeholder="새 프로젝트 이름 (예: THRESHOLD 후반작업)">
+        <button id="new-proj-btn">프로젝트 추가</button>
+      </div>
+    `;
+    document.getElementById('new-proj-btn').onclick = addProject;
+    document.getElementById('new-proj-input').addEventListener('keydown', e=>{ if(e.key==='Enter') addProject(); });
+    return;
+  }
+
+  const proj = getActiveProject();
+  const total = proj.tasks.length;
+  const done = proj.tasks.filter(t=>t.status==='완료').length;
+
+  const tabsHtml = state.projects.map(p => `
+    <div class="tab ${p.id===activeProjectId?'active':''}" data-id="${p.id}">
+      ${escapeHtml(p.name)}<span class="del-x" data-del-proj="${p.id}">✕</span>
+    </div>
+  `).join('') + `<div class="tab-add" id="tab-add">+ 프로젝트</div>`;
+
+  const sprockets = Array.from({length: total}).map((_,i) =>
+    `<div class="sprocket ${i < done ? 'filled':''}"></div>`
+  ).join('');
+
+  const rowsHtml = proj.tasks.length ? proj.tasks.map(t => `
+    <tr data-task="${t.id}">
+      <td>
+        <span class="status-pill status-${t.status}" data-cycle="${t.id}">
+          <span class="status-dot"></span>${t.status}
+        </span>
+      </td>
+      <td class="task-name"><input type="text" value="${escapeAttr(t.name)}" data-field="name" data-task="${t.id}"></td>
+      <td class="assignee"><input type="text" value="${escapeAttr(t.assignee)}" placeholder="담당" data-field="assignee" data-task="${t.id}"></td>
+      <td class="due"><input type="date" value="${t.due}" data-field="due" data-task="${t.id}"></td>
+      <td class="action"><span class="del-btn" data-del-task="${t.id}">✕</span></td>
+    </tr>
+  `).join('') : `<tr><td colspan="5" class="empty">아직 작업이 없습니다. 아래에서 추가하세요.</td></tr>`;
+
+  app.innerHTML = `
+    <header class="top">
+      <div><h1>제작 현황판</h1><p>SCNTV 프로덕션 트래커 · 팀 공유용</p></div>
+      <div class="sync-note">이 링크를 여는 모든 팀원과 실시간으로 데이터가 공유됩니다</div>
+    </header>
+
+    <div class="tabs">${tabsHtml}</div>
+    <div class="board">
+      <div class="board-title-row">
+        <input class="proj-name" id="proj-name-input" value="${escapeAttr(proj.name)}">
+      </div>
+
+      <div class="filmstrip-row">
+        <div class="filmstrip">${sprockets || '<span class="progress-label">작업 없음</span>'}</div>
+        <div class="progress-label">${done} / ${total} 완료</div>
+      </div>
+
+      <table>
+        <thead>
+          <tr><th>상태</th><th>작업명</th><th>담당</th><th>마감일</th><th></th></tr>
+        </thead>
+        <tbody>${rowsHtml}</tbody>
+      </table>
+
+      <div class="add-row">
+        <input id="new-task-input" type="text" placeholder="새 작업 추가 (예: 선동2리 자막 작업)">
+        <button id="new-task-btn">추가</button>
+      </div>
+    </div>
+  `;
+
+  // bind events
+  document.querySelectorAll('.tab[data-id]').forEach(el=>{
+    el.addEventListener('click', (e)=>{
+      if(e.target.dataset.delProj) return;
+      activeProjectId = el.dataset.id;
+      render();
+    });
+  });
+  document.getElementById('tab-add').onclick = addProject;
+  document.querySelectorAll('[data-del-proj]').forEach(el=>{
+    el.addEventListener('click', (e)=>{
+      e.stopPropagation();
+      deleteProject(el.dataset.delProj);
+    });
+  });
+  document.getElementById('proj-name-input').addEventListener('change', e=>{
+    proj.name = e.target.value.trim() || proj.name;
+    save(); render();
+  });
+  document.querySelectorAll('[data-cycle]').forEach(el=>{
+    el.addEventListener('click', ()=>{
+      const t = proj.tasks.find(t=>t.id===el.dataset.cycle);
+      t.status = cycleStatus(t.status);
+      save(); render();
+    });
+  });
+  document.querySelectorAll('input[data-field]').forEach(el=>{
+    el.addEventListener('change', ()=>{
+      const t = proj.tasks.find(t=>t.id===el.dataset.task);
+      t[el.dataset.field] = el.value;
+      save();
+      if(el.dataset.field !== 'name' && el.dataset.field !== 'assignee') render();
+    });
+  });
+  document.querySelectorAll('[data-del-task]').forEach(el=>{
+    el.addEventListener('click', ()=>{
+      proj.tasks = proj.tasks.filter(t=>t.id!==el.dataset.delTask);
+      save(); render();
+    });
+  });
+  document.getElementById('new-task-btn').onclick = addTask;
+  document.getElementById('new-task-input').addEventListener('keydown', e=>{ if(e.key==='Enter') addTask(); });
+}
+
+function addTask(){
+  const input = document.getElementById('new-task-input');
+  const name = input.value.trim();
+  if(!name) return;
+  const proj = getActiveProject();
+  proj.tasks.push({ id: uid(), name, assignee:'', due:'', status:'대기' });
+  save(); render();
+}
+
+function addProject(){
+  const name = prompt('새 프로젝트 이름을 입력하세요') || '';
+  if(!name.trim()) return;
+  const id = uid();
+  state.projects.push({ id, name: name.trim(), tasks: [] });
+  activeProjectId = id;
+  save(); render();
+}
+
+function deleteProject(id){
+  if(!confirm('이 프로젝트를 삭제할까요? 모든 작업 데이터가 사라집니다.')) return;
+  state.projects = state.projects.filter(p=>p.id!==id);
+  if(activeProjectId === id){
+    activeProjectId = state.projects.length ? state.projects[0].id : null;
+  }
+  save(); render();
+}
+
+function escapeHtml(s){
+  return (s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+function escapeAttr(s){ return escapeHtml(s); }
+
+load();
+</script>
+</body>
+</html>
