@@ -329,6 +329,12 @@
         const budgetDateElInit = document.getElementById('budget-date');
         if (budgetDateElInit) budgetDateElInit.value = getToday();
 
+        // 날짜를 고르면 캘린더가 자동으로 닫히도록 처리 (버튼을 가려서 클릭이 씹히는 문제 방지)
+        ['schedule-date', 'log-date', 'budget-date'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.addEventListener('change', () => el.blur());
+        });
+
         let currentMonth = new Date();
         let selectedDate = null;
 
