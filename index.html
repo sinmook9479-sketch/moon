@@ -254,10 +254,9 @@
                         <label for="schedule-img" class="cursor-pointer bg-slate-700 hover:bg-slate-600 text-slate-300 text-xs px-4 py-2 rounded transition border border-slate-600">
                             <i class="fas fa-camera mr-1"></i> 사진 선택
                         </label>
-                        <input type="file" id="schedule-img" accept="image/*" class="hidden" onchange="previewScheduleImg(event)">
-                        <button onclick="removeScheduleImg()" type="button" id="btn-remove-schedule-img" class="hidden text-xs text-red-400 hover:text-red-300 underline">삭제</button>
+                        <input type="file" id="schedule-img" accept="image/*" multiple class="hidden" onchange="previewScheduleImg(event)">
                     </div>
-                    <img id="schedule-img-preview" class="hidden mt-3 h-32 object-cover rounded border border-slate-600 w-full">
+                    <div id="schedule-img-preview" class="hidden mt-3 grid grid-cols-3 gap-2"></div>
                 </div>
                 <div>
                     <label class="block text-xs font-bold text-slate-400 mb-1">4. 날짜 (클릭하여 선택)</label>
@@ -292,10 +291,9 @@
                         <label for="log-img" class="cursor-pointer bg-slate-700 hover:bg-slate-600 text-slate-300 text-xs px-4 py-2 rounded transition border border-slate-600">
                             <i class="fas fa-camera mr-1"></i> 사진 선택
                         </label>
-                        <input type="file" id="log-img" accept="image/*" class="hidden" onchange="previewLogImg(event)">
-                        <button onclick="removeLogImg()" type="button" id="btn-remove-log-img" class="hidden text-xs text-red-400 hover:text-red-300 underline">삭제</button>
+                        <input type="file" id="log-img" accept="image/*" multiple class="hidden" onchange="previewLogImg(event)">
                     </div>
-                    <img id="log-img-preview" class="hidden mt-3 h-32 object-cover rounded border border-slate-600 w-full">
+                    <div id="log-img-preview" class="hidden mt-3 grid grid-cols-3 gap-2"></div>
                 </div>
                 <div>
                     <label class="block text-xs font-bold text-slate-400 mb-1">날짜 (클릭하여 선택)</label>
@@ -339,10 +337,9 @@
                         <label for="budget-img" class="cursor-pointer bg-slate-700 hover:bg-slate-600 text-slate-300 text-xs px-4 py-2 rounded transition border border-slate-600">
                             <i class="fas fa-receipt mr-1"></i> 영수증 선택
                         </label>
-                        <input type="file" id="budget-img" accept="image/*" class="hidden" onchange="previewBudgetImg(event)">
-                        <button onclick="removeBudgetImg()" type="button" id="btn-remove-budget-img" class="hidden text-xs text-red-400 hover:text-red-300 underline">삭제</button>
+                        <input type="file" id="budget-img" accept="image/*" multiple class="hidden" onchange="previewBudgetImg(event)">
                     </div>
-                    <img id="budget-img-preview" class="hidden mt-3 h-32 object-cover rounded border border-slate-600 w-full">
+                    <div id="budget-img-preview" class="hidden mt-3 grid grid-cols-3 gap-2"></div>
                 </div>
                 <div>
                     <label class="block text-xs font-bold text-slate-400 mb-1">날짜 (클릭하여 선택)</label>
@@ -384,14 +381,47 @@
         let editScheduleId = null;
         let editLogId = null;
         let editBudgetId = null;
-        let tempScheduleImgBase64 = null;
-        let tempBudgetImgBase64 = null;
-        let tempLogImgBase64 = null;
+        let tempScheduleImgs = [];
+        let tempBudgetImgs = [];
+        let tempLogImgs = [];
 
         function formatMoney(num) { return Number(num).toLocaleString('ko-KR'); }
         function getToday() {
             const today = new Date();
             return `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+        }
+
+        // --- 다중 이미지 첨부 공용 헬퍼 ---
+        function imgsOf(item) {
+            if (Array.isArray(item.imgs)) return item.imgs;
+            if (item.img) return [item.img];
+            return [];
+        }
+
+        function renderImgPreviewGrid(containerId, imgsArray, removeFnName) {
+            const container = document.getElementById(containerId);
+            if (!container) return;
+            if (!imgsArray.length) { container.classList.add('hidden'); container.innerHTML = ''; return; }
+            container.classList.remove('hidden');
+            container.innerHTML = imgsArray.map((img, i) => `
+                <div class="relative">
+                    <img src="${img}" class="w-full h-20 object-cover rounded border border-slate-600">
+                    <button type="button" onclick="${removeFnName}(${i})" class="absolute -top-1.5 -right-1.5 bg-red-600 hover:bg-red-500 text-white rounded-full w-5 h-5 text-[10px] leading-none flex items-center justify-center shadow">✕</button>
+                </div>
+            `).join('');
+        }
+
+        function imgGalleryHtml(imgs, caption) {
+            if (!imgs || !imgs.length) return '';
+            const safeCaption = (caption || '').replace(/'/g, "\\'");
+            return `<div class="mt-2 grid grid-cols-3 gap-2">` + imgs.map(img => `
+                <div class="cursor-pointer overflow-hidden rounded border border-slate-600 group relative" onclick="openImageModal('${img}', '${safeCaption}')">
+                    <img src="${img}" class="w-full h-20 object-cover group-hover:scale-105 transition duration-300 opacity-80 group-hover:opacity-100">
+                    <div class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition pointer-events-none bg-black/30">
+                        <i class="fas fa-search-plus text-white text-lg drop-shadow-lg"></i>
+                    </div>
+                </div>
+            `).join('') + `</div>`;
         }
 
         const schedDateElInit = document.getElementById('schedule-date');
@@ -640,9 +670,8 @@
             document.getElementById('schedule-title').value = '';
             document.getElementById('schedule-content').value = '';
             document.getElementById('schedule-img').value = '';
-            document.getElementById('schedule-img-preview').classList.add('hidden');
-            document.getElementById('btn-remove-schedule-img').classList.add('hidden');
-            tempScheduleImgBase64 = null;
+            tempScheduleImgs = [];
+            renderImgPreviewGrid('schedule-img-preview', tempScheduleImgs, 'removeScheduleImgAt');
             editScheduleId = null;
             const saveBtn = document.getElementById('btn-save-schedule');
             saveBtn.textContent = '등록하기';
@@ -657,24 +686,22 @@
         }
 
         function previewScheduleImg(event) {
-            const file = event.target.files[0];
-            if (!file) return;
-            const reader = new FileReader();
-            reader.onload = function (e) {
-                tempScheduleImgBase64 = e.target.result;
-                const preview = document.getElementById('schedule-img-preview');
-                preview.src = tempScheduleImgBase64;
-                preview.classList.remove('hidden');
-                document.getElementById('btn-remove-schedule-img').classList.remove('hidden');
-            };
-            reader.readAsDataURL(file);
+            const files = Array.from(event.target.files || []);
+            if (!files.length) return;
+            files.forEach(file => {
+                const reader = new FileReader();
+                reader.onload = function (e) {
+                    tempScheduleImgs.push(e.target.result);
+                    renderImgPreviewGrid('schedule-img-preview', tempScheduleImgs, 'removeScheduleImgAt');
+                };
+                reader.readAsDataURL(file);
+            });
+            event.target.value = '';
         }
 
-        function removeScheduleImg() {
-            tempScheduleImgBase64 = null;
-            document.getElementById('schedule-img').value = '';
-            document.getElementById('schedule-img-preview').classList.add('hidden');
-            document.getElementById('btn-remove-schedule-img').classList.add('hidden');
+        function removeScheduleImgAt(i) {
+            tempScheduleImgs.splice(i, 1);
+            renderImgPreviewGrid('schedule-img-preview', tempScheduleImgs, 'removeScheduleImgAt');
         }
 
         function saveSchedule() {
@@ -684,7 +711,7 @@
             const content = document.getElementById('schedule-content').value.trim();
             if (!date || !title) return alert('날짜와 일정 제목을 입력해주세요.');
 
-            const obj = { date, category, title, content, img: tempScheduleImgBase64 || null };
+            const obj = { date, category, title, content, imgs: tempScheduleImgs.length ? tempScheduleImgs : null };
 
             if (editScheduleId) {
                 db.ref('schedules/' + editScheduleId).set({ ...obj, id: editScheduleId });
@@ -707,11 +734,8 @@
             document.getElementById('schedule-category').value = item.category || '본 촬영';
             document.getElementById('schedule-title').value = item.title;
             document.getElementById('schedule-content').value = item.content || '';
-            tempScheduleImgBase64 = item.img || null;
-            const preview = document.getElementById('schedule-img-preview');
-            const removeBtn = document.getElementById('btn-remove-schedule-img');
-            if (item.img) { preview.src = item.img; preview.classList.remove('hidden'); removeBtn.classList.remove('hidden'); }
-            else { preview.classList.add('hidden'); removeBtn.classList.add('hidden'); }
+            tempScheduleImgs = imgsOf(item);
+            renderImgPreviewGrid('schedule-img-preview', tempScheduleImgs, 'removeScheduleImgAt');
             editScheduleId = id;
             const saveBtn = document.getElementById('btn-save-schedule');
             saveBtn.textContent = '수정 완료';
@@ -737,13 +761,7 @@
             }
 
             displaySchedules.forEach(item => {
-                const imgHtml = item.img ? `
-                    <div class="mt-2 cursor-pointer overflow-hidden rounded border border-slate-600 group relative" onclick="openImageModal('${item.img}', '${item.title}')">
-                        <img src="${item.img}" class="w-full h-24 object-cover group-hover:scale-105 transition duration-300 opacity-80 group-hover:opacity-100">
-                        <div class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition pointer-events-none bg-black/30">
-                            <i class="fas fa-search-plus text-white text-2xl drop-shadow-lg"></i>
-                        </div>
-                    </div>` : '';
+                const imgHtml = imgGalleryHtml(imgsOf(item), item.title);
                 const categoryBadge = item.category ? `<span class="text-[11px] bg-pink-900/50 text-pink-300 border border-pink-700/50 px-1.5 py-0.5 rounded font-bold mb-1 mr-1 inline-block">${item.category}</span>` : '';
 
                 list.innerHTML += `
@@ -796,9 +814,8 @@
             document.getElementById('log-title').value = '';
             document.getElementById('log-content').value = '';
             document.getElementById('log-img').value = '';
-            document.getElementById('log-img-preview').classList.add('hidden');
-            document.getElementById('btn-remove-log-img').classList.add('hidden');
-            tempLogImgBase64 = null;
+            tempLogImgs = [];
+            renderImgPreviewGrid('log-img-preview', tempLogImgs, 'removeLogImgAt');
             editLogId = null;
             const saveBtn = document.getElementById('btn-save-log');
             saveBtn.textContent = '기록하기';
@@ -813,24 +830,22 @@
         }
 
         function previewLogImg(event) {
-            const file = event.target.files[0];
-            if (!file) return;
-            const reader = new FileReader();
-            reader.onload = function (e) {
-                tempLogImgBase64 = e.target.result;
-                const preview = document.getElementById('log-img-preview');
-                preview.src = tempLogImgBase64;
-                preview.classList.remove('hidden');
-                document.getElementById('btn-remove-log-img').classList.remove('hidden');
-            };
-            reader.readAsDataURL(file);
+            const files = Array.from(event.target.files || []);
+            if (!files.length) return;
+            files.forEach(file => {
+                const reader = new FileReader();
+                reader.onload = function (e) {
+                    tempLogImgs.push(e.target.result);
+                    renderImgPreviewGrid('log-img-preview', tempLogImgs, 'removeLogImgAt');
+                };
+                reader.readAsDataURL(file);
+            });
+            event.target.value = '';
         }
 
-        function removeLogImg() {
-            tempLogImgBase64 = null;
-            document.getElementById('log-img').value = '';
-            document.getElementById('log-img-preview').classList.add('hidden');
-            document.getElementById('btn-remove-log-img').classList.add('hidden');
+        function removeLogImgAt(i) {
+            tempLogImgs.splice(i, 1);
+            renderImgPreviewGrid('log-img-preview', tempLogImgs, 'removeLogImgAt');
         }
 
         function saveLog() {
@@ -840,13 +855,13 @@
             if (!title || !text) return alert('제목과 내용을 모두 입력해주세요.');
 
             const nowStr = new Date().toLocaleString();
-            const img = tempLogImgBase64 || null;
+            const imgs = tempLogImgs.length ? tempLogImgs : null;
             if (editLogId) {
                 const existing = logs.find(l => l.id === editLogId) || {};
-                db.ref('logs/' + editLogId).set({ ...existing, date, title, text, img, updatedAt: nowStr, id: editLogId });
+                db.ref('logs/' + editLogId).set({ ...existing, date, title, text, imgs, updatedAt: nowStr, id: editLogId });
             } else {
                 const ref = db.ref('logs').push();
-                ref.set({ date, title, text, img, createdAt: nowStr, id: ref.key });
+                ref.set({ date, title, text, imgs, createdAt: nowStr, id: ref.key });
             }
             closeLogModal();
         }
@@ -858,11 +873,8 @@
             document.getElementById('log-date').value = item.date || getToday();
             document.getElementById('log-title').value = item.title || '';
             document.getElementById('log-content').value = item.text;
-            tempLogImgBase64 = item.img || null;
-            const preview = document.getElementById('log-img-preview');
-            const removeBtn = document.getElementById('btn-remove-log-img');
-            if (item.img) { preview.src = item.img; preview.classList.remove('hidden'); removeBtn.classList.remove('hidden'); }
-            else { preview.classList.add('hidden'); removeBtn.classList.add('hidden'); }
+            tempLogImgs = imgsOf(item);
+            renderImgPreviewGrid('log-img-preview', tempLogImgs, 'removeLogImgAt');
             editLogId = id;
             const saveBtn = document.getElementById('btn-save-log');
             saveBtn.textContent = '수정 완료';
@@ -890,13 +902,7 @@
                 const timeStr = item.updatedAt ? `${item.updatedAt} (수정됨)` : item.createdAt;
                 const logDate = item.date || (item.createdAt ? item.createdAt.split(' ')[0] : '');
                 const logTitle = item.title || '(제목 없음)';
-                const imgHtml = item.img ? `
-                    <div class="mt-2 cursor-pointer overflow-hidden rounded border border-slate-600 group relative" onclick="openImageModal('${item.img}', '${logTitle.replace(/'/g, "\\'")}')">
-                        <img src="${item.img}" class="w-full h-24 object-cover group-hover:scale-105 transition duration-300 opacity-80 group-hover:opacity-100">
-                        <div class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition pointer-events-none bg-black/30">
-                            <i class="fas fa-search-plus text-white text-2xl drop-shadow-lg"></i>
-                        </div>
-                    </div>` : '';
+                const imgHtml = imgGalleryHtml(imgsOf(item), logTitle);
                 list.innerHTML += `
                     <div class="bg-slate-800/80 p-3 rounded-lg border border-slate-700 shadow relative group">
                         <div class="flex justify-between items-start mb-2">
@@ -925,9 +931,8 @@
             document.getElementById('budget-amount').value = '';
             document.getElementById('budget-desc').value = '';
             document.getElementById('budget-img').value = '';
-            document.getElementById('budget-img-preview').classList.add('hidden');
-            document.getElementById('btn-remove-budget-img').classList.add('hidden');
-            tempBudgetImgBase64 = null;
+            tempBudgetImgs = [];
+            renderImgPreviewGrid('budget-img-preview', tempBudgetImgs, 'removeBudgetImgAt');
             editBudgetId = null;
             const saveBtn = document.getElementById('btn-save-budget');
             saveBtn.textContent = '작성 완료';
@@ -942,24 +947,22 @@
         }
 
         function previewBudgetImg(event) {
-            const file = event.target.files[0];
-            if (!file) return;
-            const reader = new FileReader();
-            reader.onload = function (e) {
-                tempBudgetImgBase64 = e.target.result;
-                const preview = document.getElementById('budget-img-preview');
-                preview.src = tempBudgetImgBase64;
-                preview.classList.remove('hidden');
-                document.getElementById('btn-remove-budget-img').classList.remove('hidden');
-            };
-            reader.readAsDataURL(file);
+            const files = Array.from(event.target.files || []);
+            if (!files.length) return;
+            files.forEach(file => {
+                const reader = new FileReader();
+                reader.onload = function (e) {
+                    tempBudgetImgs.push(e.target.result);
+                    renderImgPreviewGrid('budget-img-preview', tempBudgetImgs, 'removeBudgetImgAt');
+                };
+                reader.readAsDataURL(file);
+            });
+            event.target.value = '';
         }
 
-        function removeBudgetImg() {
-            tempBudgetImgBase64 = null;
-            document.getElementById('budget-img').value = '';
-            document.getElementById('budget-img-preview').classList.add('hidden');
-            document.getElementById('btn-remove-budget-img').classList.add('hidden');
+        function removeBudgetImgAt(i) {
+            tempBudgetImgs.splice(i, 1);
+            renderImgPreviewGrid('budget-img-preview', tempBudgetImgs, 'removeBudgetImgAt');
         }
 
         function saveBudget() {
@@ -969,7 +972,7 @@
             const desc = document.getElementById('budget-desc').value.trim();
             if (!amount || isNaN(amount) || !desc) return alert('금액과 내역을 정확히 입력해주세요.');
 
-            const obj = { date, type, amount, desc, img: tempBudgetImgBase64 || null };
+            const obj = { date, type, amount, desc, imgs: tempBudgetImgs.length ? tempBudgetImgs : null };
 
             if (editBudgetId) {
                 db.ref('budgets/' + editBudgetId).set({ ...obj, id: editBudgetId });
@@ -988,11 +991,8 @@
             document.getElementById('budget-type').value = item.type;
             document.getElementById('budget-amount').value = item.amount;
             document.getElementById('budget-desc').value = item.desc;
-            tempBudgetImgBase64 = item.img || null;
-            const preview = document.getElementById('budget-img-preview');
-            const removeBtn = document.getElementById('btn-remove-budget-img');
-            if (item.img) { preview.src = item.img; preview.classList.remove('hidden'); removeBtn.classList.remove('hidden'); }
-            else { preview.classList.add('hidden'); removeBtn.classList.add('hidden'); }
+            tempBudgetImgs = imgsOf(item);
+            renderImgPreviewGrid('budget-img-preview', tempBudgetImgs, 'removeBudgetImgAt');
             editBudgetId = id;
             const saveBtn = document.getElementById('btn-save-budget');
             saveBtn.textContent = '수정 완료';
@@ -1019,13 +1019,7 @@
                 const sign = isIncome ? '+' : '-';
                 const itemDate = item.date || getToday();
 
-                const imgThumbnailHtml = item.img ? `
-                    <div class="mt-2 cursor-pointer overflow-hidden rounded border border-slate-600 group relative w-20 h-16 inline-block" onclick="openImageModal('${item.img}', '${item.desc} (${formatMoney(item.amount)}원)')">
-                        <img src="${item.img}" class="w-full h-full object-cover group-hover:scale-105 transition duration-300 opacity-80 group-hover:opacity-100">
-                        <div class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition pointer-events-none bg-black/40">
-                            <i class="fas fa-search-plus text-white text-xs drop-shadow-lg"></i>
-                        </div>
-                    </div>` : '';
+                const imgThumbnailHtml = imgGalleryHtml(imgsOf(item), `${item.desc} (${formatMoney(item.amount)}원)`);
 
                 list.innerHTML += `
                     <div class="bg-slate-800/80 p-3 rounded-lg border border-slate-700 shadow group flex flex-col justify-between">
