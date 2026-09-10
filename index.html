@@ -287,6 +287,17 @@
                     <textarea id="log-content" class="w-full h-32 px-3 py-2 bg-slate-900 border border-slate-600 rounded text-sm text-white focus:outline-none focus:border-yellow-500 resize-none" placeholder="공지, 회의록, 현장 기록 등 상세 내용"></textarea>
                 </div>
                 <div>
+                    <label class="block text-xs font-bold text-slate-400 mb-1">사진 첨부</label>
+                    <div class="flex gap-2 items-center">
+                        <label for="log-img" class="cursor-pointer bg-slate-700 hover:bg-slate-600 text-slate-300 text-xs px-4 py-2 rounded transition border border-slate-600">
+                            <i class="fas fa-camera mr-1"></i> 사진 선택
+                        </label>
+                        <input type="file" id="log-img" accept="image/*" class="hidden" onchange="previewLogImg(event)">
+                        <button onclick="removeLogImg()" type="button" id="btn-remove-log-img" class="hidden text-xs text-red-400 hover:text-red-300 underline">삭제</button>
+                    </div>
+                    <img id="log-img-preview" class="hidden mt-3 h-32 object-cover rounded border border-slate-600 w-full">
+                </div>
+                <div>
                     <label class="block text-xs font-bold text-slate-400 mb-1">날짜 (클릭하여 선택)</label>
                     <input type="text" id="log-date" placeholder="YYYY-MM-DD" pattern="\d{4}-\d{2}-\d{2}" class="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded text-sm text-white focus:outline-none focus:border-yellow-500">
                     <p class="text-[10px] text-slate-500 mt-1">형식: 2026-09-10 (연-월-일)</p>
@@ -375,6 +386,7 @@
         let editBudgetId = null;
         let tempScheduleImgBase64 = null;
         let tempBudgetImgBase64 = null;
+        let tempLogImgBase64 = null;
 
         function formatMoney(num) { return Number(num).toLocaleString('ko-KR'); }
         function getToday() {
@@ -783,6 +795,10 @@
             document.getElementById('log-date').value = getToday();
             document.getElementById('log-title').value = '';
             document.getElementById('log-content').value = '';
+            document.getElementById('log-img').value = '';
+            document.getElementById('log-img-preview').classList.add('hidden');
+            document.getElementById('btn-remove-log-img').classList.add('hidden');
+            tempLogImgBase64 = null;
             editLogId = null;
             const saveBtn = document.getElementById('btn-save-log');
             saveBtn.textContent = '기록하기';
@@ -796,6 +812,27 @@
             modal.classList.add('hidden'); modal.classList.remove('flex');
         }
 
+        function previewLogImg(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                tempLogImgBase64 = e.target.result;
+                const preview = document.getElementById('log-img-preview');
+                preview.src = tempLogImgBase64;
+                preview.classList.remove('hidden');
+                document.getElementById('btn-remove-log-img').classList.remove('hidden');
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function removeLogImg() {
+            tempLogImgBase64 = null;
+            document.getElementById('log-img').value = '';
+            document.getElementById('log-img-preview').classList.add('hidden');
+            document.getElementById('btn-remove-log-img').classList.add('hidden');
+        }
+
         function saveLog() {
             const date = document.getElementById('log-date').value;
             const title = document.getElementById('log-title').value.trim();
@@ -803,12 +840,13 @@
             if (!title || !text) return alert('제목과 내용을 모두 입력해주세요.');
 
             const nowStr = new Date().toLocaleString();
+            const img = tempLogImgBase64 || null;
             if (editLogId) {
                 const existing = logs.find(l => l.id === editLogId) || {};
-                db.ref('logs/' + editLogId).set({ ...existing, date, title, text, updatedAt: nowStr, id: editLogId });
+                db.ref('logs/' + editLogId).set({ ...existing, date, title, text, img, updatedAt: nowStr, id: editLogId });
             } else {
                 const ref = db.ref('logs').push();
-                ref.set({ date, title, text, createdAt: nowStr, id: ref.key });
+                ref.set({ date, title, text, img, createdAt: nowStr, id: ref.key });
             }
             closeLogModal();
         }
@@ -820,6 +858,11 @@
             document.getElementById('log-date').value = item.date || getToday();
             document.getElementById('log-title').value = item.title || '';
             document.getElementById('log-content').value = item.text;
+            tempLogImgBase64 = item.img || null;
+            const preview = document.getElementById('log-img-preview');
+            const removeBtn = document.getElementById('btn-remove-log-img');
+            if (item.img) { preview.src = item.img; preview.classList.remove('hidden'); removeBtn.classList.remove('hidden'); }
+            else { preview.classList.add('hidden'); removeBtn.classList.add('hidden'); }
             editLogId = id;
             const saveBtn = document.getElementById('btn-save-log');
             saveBtn.textContent = '수정 완료';
@@ -847,6 +890,13 @@
                 const timeStr = item.updatedAt ? `${item.updatedAt} (수정됨)` : item.createdAt;
                 const logDate = item.date || (item.createdAt ? item.createdAt.split(' ')[0] : '');
                 const logTitle = item.title || '(제목 없음)';
+                const imgHtml = item.img ? `
+                    <div class="mt-2 cursor-pointer overflow-hidden rounded border border-slate-600 group relative" onclick="openImageModal('${item.img}', '${logTitle.replace(/'/g, "\\'")}')">
+                        <img src="${item.img}" class="w-full h-24 object-cover group-hover:scale-105 transition duration-300 opacity-80 group-hover:opacity-100">
+                        <div class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition pointer-events-none bg-black/30">
+                            <i class="fas fa-search-plus text-white text-2xl drop-shadow-lg"></i>
+                        </div>
+                    </div>` : '';
                 list.innerHTML += `
                     <div class="bg-slate-800/80 p-3 rounded-lg border border-slate-700 shadow relative group">
                         <div class="flex justify-between items-start mb-2">
@@ -860,6 +910,7 @@
                             </div>
                         </div>
                         <p class="text-[13px] text-slate-300 leading-relaxed whitespace-pre-wrap bg-slate-900/50 p-2 rounded border border-slate-700/50">${item.text}</p>
+                        <div>${imgHtml}</div>
                         <span class="text-[9px] text-slate-500 block mt-2 text-right">${timeStr}</span>
                     </div>
                 `;
