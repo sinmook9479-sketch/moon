@@ -81,6 +81,10 @@
                 <button onclick="exportBackup()" class="bg-slate-700 hover:bg-slate-600 px-3.5 py-2 rounded text-sm font-bold transition text-slate-200 shadow-md flex items-center gap-1.5">
                     <i class="fas fa-download"></i> 백업 다운로드
                 </button>
+                <label for="restore-input" class="cursor-pointer bg-slate-700 hover:bg-slate-600 px-3.5 py-2 rounded text-sm font-bold transition text-slate-200 shadow-md flex items-center gap-1.5">
+                    <i class="fas fa-upload"></i> 백업 복원
+                </label>
+                <input type="file" id="restore-input" accept="application/json" class="hidden" onchange="importBackup(event)">
                 <button onclick="lockDashboard()" class="bg-slate-700 hover:bg-slate-600 px-3 py-2 rounded text-sm font-bold transition text-red-400 shadow-md flex items-center gap-1">
                     <i class="fas fa-sign-out-alt"></i> 잠금
                 </button>
@@ -440,6 +444,56 @@
             document.body.appendChild(a);
             a.click();
             a.remove();
+        }
+
+        // --- 백업 복원 (JSON 파일을 읽어 Firebase에 덮어쓰기) ---
+        function importBackup(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                let data;
+                try {
+                    data = JSON.parse(e.target.result);
+                } catch (err) {
+                    alert('파일을 읽을 수 없습니다. 올바른 백업(.json) 파일인지 확인해주세요.');
+                    return;
+                }
+
+                const schedCount = (data.schedules || []).length;
+                const logCount = (data.logs || []).length;
+                const budgetCount = (data.budgets || []).length;
+
+                const ok = confirm(
+                    `이 백업 파일로 복원하면 지금 모든 팀원이 보고 있는 현재 데이터가 통째로 교체됩니다.\n\n` +
+                    `복원될 내용: 일정 ${schedCount}건 / 로그 ${logCount}건 / 예산 ${budgetCount}건\n` +
+                    (data.exportedAt ? `백업 생성 시각: ${new Date(data.exportedAt).toLocaleString()}\n\n` : '\n') +
+                    `계속할까요?`
+                );
+                if (!ok) { event.target.value = ''; return; }
+
+                const toObj = (arr) => {
+                    const obj = {};
+                    (arr || []).forEach(item => {
+                        if (item && item.id) obj[item.id] = item;
+                    });
+                    return obj;
+                };
+
+                Promise.all([
+                    db.ref('schedules').set(toObj(data.schedules)),
+                    db.ref('logs').set(toObj(data.logs)),
+                    db.ref('budgets').set(toObj(data.budgets))
+                ]).then(() => {
+                    alert('복원이 완료되었습니다.');
+                }).catch(err => {
+                    alert('복원 중 오류가 발생했습니다: ' + err.message);
+                });
+
+                event.target.value = '';
+            };
+            reader.readAsText(file);
         }
 
         // --- 캘린더 렌더링 ---
