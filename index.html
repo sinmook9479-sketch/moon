@@ -28,7 +28,10 @@
     <!-- 🔒 1. 보안 로그인 화면 -->
     <div id="login-screen" class="fixed inset-0 bg-slate-900 z-50 flex flex-col items-center justify-center p-4 transition-opacity duration-500">
 
-        <label for="login-poster-upload" class="relative w-64 h-96 md:w-80 md:h-[28rem] rounded-lg shadow-2xl mb-8 border border-slate-700 overflow-hidden bg-[#0a0a0a] cursor-pointer block group">
+        <div id="login-bg-pattern" class="absolute inset-0 z-0" style="background-repeat: repeat; background-size: 260px auto; opacity: 0.10; filter: blur(1px);"></div>
+        <div class="absolute inset-0 z-0 bg-gradient-to-b from-slate-900/60 via-slate-900/80 to-slate-900"></div>
+
+        <label for="login-poster-upload" class="relative z-10 w-64 h-96 md:w-80 md:h-[28rem] rounded-lg shadow-2xl mb-8 border border-slate-700 overflow-hidden bg-[#0a0a0a] cursor-pointer block group">
             <div id="default-poster-bg" class="absolute inset-0 flex flex-col items-center text-center p-5 z-0 justify-between">
                 <div class="mt-4">
                     <p class="text-[10px] text-gray-400 mb-3 break-keep font-light">농촌의 고령화와 빈집의 사회적 문제를<br>함께 고민해 보는 영화</p>
@@ -57,8 +60,8 @@
             <input type="file" id="login-poster-upload" accept="image/*" class="hidden" onchange="uploadLoginPoster(event)">
         </label>
 
-        <h1 class="text-3xl font-bold mb-6 text-white tracking-wider">단편영화 &lt;문턱&gt;</h1>
-        <div class="glass-panel p-8 rounded-xl shadow-2xl flex flex-col items-center w-full max-w-sm">
+        <h1 class="relative z-10 text-3xl font-bold mb-6 text-white tracking-wider">단편영화 &lt;문턱&gt;</h1>
+        <div class="relative z-10 glass-panel p-8 rounded-xl shadow-2xl flex flex-col items-center w-full max-w-sm">
             <p class="text-slate-400 mb-4 text-sm"><i class="fas fa-lock mr-2"></i>크루 전용 비밀번호를 입력하세요</p>
             <input type="password" id="pwd-input" class="w-full px-4 py-3 bg-slate-900 border border-slate-600 rounded-lg mb-4 text-white text-center focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition" placeholder="비밀번호" onkeypress="if(event.key === 'Enter') checkPassword()">
             <button onclick="checkPassword()" class="w-full px-6 py-3 bg-blue-600 hover:bg-blue-700 rounded-lg text-white font-bold transition shadow-lg">입장하기</button>
@@ -380,11 +383,13 @@
             const val = snap.val() || DEFAULT_POSTER;
             const posterImg = document.getElementById('login-poster-img');
             const defaultBg = document.getElementById('default-poster-bg');
+            const bgPattern = document.getElementById('login-bg-pattern');
             if (posterImg) {
                 posterImg.src = val;
                 posterImg.style.opacity = '1';
             }
             if (defaultBg) defaultBg.style.opacity = '0';
+            if (bgPattern) bgPattern.style.backgroundImage = `url("${val}")`;
         });
 
         function uploadLoginPoster(event) {
