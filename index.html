@@ -919,7 +919,7 @@
             const list = document.getElementById('schedule-list');
             if (!list) return;
             list.innerHTML = '';
-            schedules.sort((a, b) => new Date(a.date) - new Date(b.date));
+            schedules.sort((a, b) => (b.date || '').localeCompare(a.date || '') || (b.id || '').localeCompare(a.id || ''));
             const displaySchedules = selectedDate ? schedules.filter(s => s.date === selectedDate) : schedules;
 
             if (displaySchedules.length === 0) {
@@ -1069,7 +1069,8 @@
             const list = document.getElementById('log-list');
             if (!list) return;
             list.innerHTML = '';
-            logs.sort((a, b) => new Date(a.createdAt || a.date) - new Date(b.createdAt || b.date));
+            // 최신순: Firebase push ID는 생성 시각 순으로 증가하므로 id 내림차순 = 최신 기록이 위
+            logs.sort((a, b) => (b.id || '').localeCompare(a.id || ''));
 
             if (logs.length === 0) {
                 list.innerHTML = '<p class="text-slate-500 text-center py-8 text-sm">등록된 기록이 없습니다.</p>';
@@ -1191,7 +1192,7 @@
             const list = document.getElementById('budget-list');
             if (!list) return;
             list.innerHTML = '';
-            budgets.sort((a, b) => new Date(a.date) - new Date(b.date));
+            budgets.sort((a, b) => (b.date || '').localeCompare(a.date || '') || (b.id || '').localeCompare(a.id || ''));
 
             budgets.forEach(item => {
                 if (item.type === 'income') totalInc += item.amount; else totalExp += item.amount;
