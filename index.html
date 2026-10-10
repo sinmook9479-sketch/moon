@@ -9,6 +9,7 @@
     <!-- Firebase (실시간 팀 공유용) -->
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
     <style>
         @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
         body { background-color: #0f172a; color: #f8fafc; font-family: 'Pretendard', sans-serif; }
@@ -296,6 +297,17 @@
                     <div id="log-img-preview" class="hidden mt-3 grid grid-cols-3 gap-2"></div>
                 </div>
                 <div>
+                    <label class="block text-xs font-bold text-slate-400 mb-1">영상 첨부</label>
+                    <div class="flex gap-2 items-center">
+                        <label for="log-video" id="log-video-upload-label" class="cursor-pointer bg-slate-700 hover:bg-slate-600 text-slate-300 text-xs px-4 py-2 rounded transition border border-slate-600">
+                            <i class="fas fa-video mr-1"></i> 영상 선택
+                        </label>
+                        <input type="file" id="log-video" accept="video/*" multiple class="hidden" onchange="handleLogVideoSelect(event)">
+                    </div>
+                    <p class="text-[10px] text-slate-500 mt-1">용량이 큰 영상은 와이파이에서 올리는 걸 권장합니다. 업로드 중에도 저장은 가능하지만, 업로드가 끝나기 전엔 창을 닫지 마세요.</p>
+                    <div id="log-video-preview" class="hidden mt-3 space-y-2"></div>
+                </div>
+                <div>
                     <label class="block text-xs font-bold text-slate-400 mb-1">날짜 (클릭하여 선택)</label>
                     <input type="text" id="log-date" placeholder="YYYY-MM-DD" pattern="\d{4}-\d{2}-\d{2}" class="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded text-sm text-white focus:outline-none focus:border-yellow-500">
                     <p class="text-[10px] text-slate-500 mt-1">형식: 2026-09-10 (연-월-일)</p>
@@ -372,6 +384,7 @@
 
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
+        const storage = firebase.storage();
 
         // --- 상태 (Firebase에서 실시간으로 채워짐) ---
         let schedules = [];
@@ -384,6 +397,8 @@
         let tempScheduleImgs = [];
         let tempBudgetImgs = [];
         let tempLogImgs = [];
+        // 현장 로그의 영상 목록. 각 항목: { id, name, url, progress, status: 'uploading'|'done'|'error' }
+        let tempLogVideos = [];
 
         function formatMoney(num) { return Number(num).toLocaleString('ko-KR'); }
         function getToday() {
@@ -494,6 +509,86 @@
                 if (btn.dataset.prevText) btn.textContent = btn.dataset.prevText;
                 btn.classList.remove('opacity-60', 'cursor-not-allowed');
             }
+        }
+
+        // --- 현장 로그 영상 첨부 (Firebase Storage 업로드) ---
+        function renderLogVideoPreview() {
+            const container = document.getElementById('log-video-preview');
+            if (!container) return;
+            if (!tempLogVideos.length) { container.classList.add('hidden'); container.innerHTML = ''; return; }
+            container.classList.remove('hidden');
+            container.innerHTML = tempLogVideos.map((v, i) => {
+                let statusHtml;
+                if (v.status === 'uploading') {
+                    statusHtml = `
+                        <div class="w-full bg-slate-700 rounded-full h-2 mt-1 overflow-hidden">
+                            <div class="bg-yellow-500 h-2 rounded-full transition-all" style="width:${v.progress || 0}%"></div>
+                        </div>
+                        <p class="text-[10px] text-yellow-400 mt-0.5">업로드 중... ${v.progress || 0}%</p>`;
+                } else if (v.status === 'error') {
+                    statusHtml = `<p class="text-[10px] text-red-400 mt-0.5"><i class="fas fa-triangle-exclamation mr-1"></i>업로드 실패</p>`;
+                } else {
+                    statusHtml = `<p class="text-[10px] text-emerald-400 mt-0.5"><i class="fas fa-check mr-1"></i>업로드 완료</p>`;
+                }
+                return `
+                    <div class="bg-slate-900 border border-slate-600 rounded p-2">
+                        <div class="flex justify-between items-center gap-2">
+                            <span class="text-xs text-slate-300 truncate"><i class="fas fa-file-video mr-1 text-yellow-400"></i>${v.name}</span>
+                            <button type="button" onclick="removeLogVideoAt(${i})" class="shrink-0 bg-red-600 hover:bg-red-500 text-white rounded-full w-5 h-5 text-[10px] leading-none flex items-center justify-center">✕</button>
+                        </div>
+                        ${statusHtml}
+                    </div>`;
+            }).join('');
+        }
+
+        function handleLogVideoSelect(event) {
+            const files = Array.from(event.target.files || []);
+            event.target.value = '';
+            if (!files.length) return;
+            files.forEach(file => {
+                const entry = { id: 'v' + Date.now() + Math.random().toString(36).slice(2, 7), name: file.name, url: null, progress: 0, status: 'uploading' };
+                tempLogVideos.push(entry);
+                renderLogVideoPreview();
+
+                const path = 'logVideos/' + entry.id + '_' + file.name;
+                const task = storage.ref(path).put(file);
+                task.on('state_changed', snap => {
+                    entry.progress = Math.round((snap.bytesTransferred / snap.totalBytes) * 100);
+                    renderLogVideoPreview();
+                }, err => {
+                    console.error(err);
+                    entry.status = 'error';
+                    renderLogVideoPreview();
+                    alert(`영상 "${file.name}" 업로드에 실패했습니다. 네트워크를 확인하고 다시 시도해주세요.`);
+                }, () => {
+                    task.snapshot.ref.getDownloadURL().then(url => {
+                        entry.url = url;
+                        entry.status = 'done';
+                        entry.progress = 100;
+                        renderLogVideoPreview();
+                    });
+                });
+            });
+        }
+
+        function removeLogVideoAt(i) {
+            const entry = tempLogVideos[i];
+            if (entry && entry.status === 'uploading') {
+                if (!confirm('업로드가 아직 진행 중입니다. 취소하시겠습니까?')) return;
+            }
+            tempLogVideos.splice(i, 1);
+            renderLogVideoPreview();
+        }
+
+        function logVideosUploading() {
+            return tempLogVideos.some(v => v.status === 'uploading');
+        }
+
+        function videoGalleryHtml(videos) {
+            if (!videos || !videos.length) return '';
+            return `<div class="mt-2 space-y-2">` + videos.map(v => `
+                <video src="${v.url}" controls class="w-full rounded border border-slate-600 max-h-48"></video>
+            `).join('') + `</div>`;
         }
 
         const schedDateElInit = document.getElementById('schedule-date');
@@ -888,6 +983,9 @@
             document.getElementById('log-img').value = '';
             tempLogImgs = [];
             renderImgPreviewGrid('log-img-preview', tempLogImgs, 'removeLogImgAt');
+            document.getElementById('log-video').value = '';
+            tempLogVideos = [];
+            renderLogVideoPreview();
             editLogId = null;
             const saveBtn = document.getElementById('btn-save-log');
             saveBtn.textContent = '기록하기';
@@ -915,19 +1013,22 @@
             const title = document.getElementById('log-title').value.trim();
             const text = document.getElementById('log-content').value.trim();
             if (!title || !text) return alert('제목과 내용을 모두 입력해주세요.');
+            if (logVideosUploading()) return alert('영상이 아직 업로드 중입니다. 업로드가 끝난 후 저장해주세요.');
 
             const nowStr = new Date().toLocaleString();
             const imgs = tempLogImgs.length ? tempLogImgs : null;
+            const videos = tempLogVideos.filter(v => v.status === 'done').map(v => ({ name: v.name, url: v.url }));
+            const videosField = videos.length ? videos : null;
             const saveBtn = document.getElementById('btn-save-log');
             setSaveButtonState(saveBtn, 'saving');
 
             let writePromise;
             if (editLogId) {
                 const existing = logs.find(l => l.id === editLogId) || {};
-                writePromise = db.ref('logs/' + editLogId).set({ ...existing, date, title, text, imgs, updatedAt: nowStr, id: editLogId });
+                writePromise = db.ref('logs/' + editLogId).set({ ...existing, date, title, text, imgs, videos: videosField, updatedAt: nowStr, id: editLogId });
             } else {
                 const ref = db.ref('logs').push();
-                writePromise = ref.set({ date, title, text, imgs, createdAt: nowStr, id: ref.key });
+                writePromise = ref.set({ date, title, text, imgs, videos: videosField, createdAt: nowStr, id: ref.key });
             }
 
             writePromise.then(() => {
@@ -949,6 +1050,9 @@
             document.getElementById('log-content').value = item.text;
             tempLogImgs = imgsOf(item);
             renderImgPreviewGrid('log-img-preview', tempLogImgs, 'removeLogImgAt');
+            document.getElementById('log-video').value = '';
+            tempLogVideos = (item.videos || []).map(v => ({ id: 'v' + Date.now() + Math.random().toString(36).slice(2, 7), name: v.name, url: v.url, progress: 100, status: 'done' }));
+            renderLogVideoPreview();
             editLogId = id;
             const saveBtn = document.getElementById('btn-save-log');
             saveBtn.textContent = '수정 완료';
@@ -977,6 +1081,7 @@
                 const logDate = item.date || (item.createdAt ? item.createdAt.split(' ')[0] : '');
                 const logTitle = item.title || '(제목 없음)';
                 const imgHtml = imgGalleryHtml(imgsOf(item), logTitle);
+                const vidHtml = videoGalleryHtml(item.videos);
                 list.innerHTML += `
                     <div class="bg-slate-800/80 p-3 rounded-lg border border-slate-700 shadow relative group">
                         <div class="flex justify-between items-start mb-2">
@@ -991,6 +1096,7 @@
                         </div>
                         <p class="text-[13px] text-slate-300 leading-relaxed whitespace-pre-wrap bg-slate-900/50 p-2 rounded border border-slate-700/50">${item.text}</p>
                         <div>${imgHtml}</div>
+                        <div>${vidHtml}</div>
                         <span class="text-[9px] text-slate-500 block mt-2 text-right">${timeStr}</span>
                     </div>
                 `;
