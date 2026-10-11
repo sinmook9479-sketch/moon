@@ -204,8 +204,11 @@
     <!-- 🖼️ 이미지 확대 모달 -->
     <div id="image-modal" class="fixed inset-0 bg-black/90 z-[70] hidden flex-col items-center justify-center p-4 backdrop-blur-sm" onclick="closeImageModal()">
         <button class="absolute top-4 right-4 text-white hover:text-red-400 text-3xl z-[80]"><i class="fas fa-times"></i></button>
-        <img id="modal-image" src="" class="max-w-full max-h-[90vh] object-contain rounded shadow-2xl border border-slate-700">
+        <button id="modal-prev" type="button" onclick="event.stopPropagation(); stepImageModal(-1)" class="hidden absolute left-2 md:left-6 top-1/2 -translate-y-1/2 z-[80] w-11 h-11 md:w-14 md:h-14 rounded-full bg-black/50 hover:bg-black/80 text-white text-xl md:text-2xl flex items-center justify-center border border-white/20"><i class="fas fa-chevron-left"></i></button>
+        <button id="modal-next" type="button" onclick="event.stopPropagation(); stepImageModal(1)" class="hidden absolute right-2 md:right-6 top-1/2 -translate-y-1/2 z-[80] w-11 h-11 md:w-14 md:h-14 rounded-full bg-black/50 hover:bg-black/80 text-white text-xl md:text-2xl flex items-center justify-center border border-white/20"><i class="fas fa-chevron-right"></i></button>
+        <img id="modal-image" src="" class="max-w-full max-h-[85vh] object-contain rounded shadow-2xl border border-slate-700" onclick="event.stopPropagation()">
         <p id="modal-caption" class="text-white mt-4 text-lg font-bold"></p>
+        <p id="modal-counter" class="text-slate-400 mt-1 text-sm"></p>
     </div>
 
     <!-- 📄 파일 미리보기 모달 -->
@@ -426,11 +429,14 @@
             `).join('');
         }
 
+        const galleryStore = {};
+        let galleryCounter = 0;
         function imgGalleryHtml(imgs, caption) {
             if (!imgs || !imgs.length) return '';
-            const safeCaption = (caption || '').replace(/'/g, "\\'");
-            return `<div class="mt-2 grid grid-cols-3 gap-2">` + imgs.map(img => `
-                <div class="cursor-pointer overflow-hidden rounded border border-slate-600 group relative" onclick="openImageModal('${img}', '${safeCaption}')">
+            const key = 'g' + (++galleryCounter);
+            galleryStore[key] = { imgs, caption: caption || '' };
+            return `<div class="mt-2 grid grid-cols-3 gap-2">` + imgs.map((img, i) => `
+                <div class="cursor-pointer overflow-hidden rounded border border-slate-600 group relative" onclick="openGallery('${key}', ${i})">
                     <img src="${img}" class="w-full h-20 object-cover group-hover:scale-105 transition duration-300 opacity-80 group-hover:opacity-100">
                     <div class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition pointer-events-none bg-black/30">
                         <i class="fas fa-search-plus text-white text-lg drop-shadow-lg"></i>
@@ -950,16 +956,55 @@
             });
         }
 
-        function openImageModal(imgSrc, caption) {
-            document.getElementById('modal-image').src = imgSrc;
-            document.getElementById('modal-caption').textContent = caption;
+        // 갤러리 뷰어: 같은 게시물의 사진들을 좌우 화살표/키보드/스와이프로 넘겨 볼 수 있다
+        let currentGallery = { imgs: [], caption: '', index: 0 };
+
+        function openGallery(key, index) {
+            const g = galleryStore[key];
+            if (!g) return;
+            currentGallery = { imgs: g.imgs, caption: g.caption, index: index || 0 };
+            showGalleryImage();
             const imgModal = document.getElementById('image-modal');
             imgModal.classList.remove('hidden'); imgModal.classList.add('flex');
+        }
+        function showGalleryImage() {
+            const { imgs, caption, index } = currentGallery;
+            document.getElementById('modal-image').src = imgs[index];
+            document.getElementById('modal-caption').textContent = caption || '';
+            const multi = imgs.length > 1;
+            document.getElementById('modal-counter').textContent = multi ? `${index + 1} / ${imgs.length}` : '';
+            document.getElementById('modal-prev').classList.toggle('hidden', !multi);
+            document.getElementById('modal-next').classList.toggle('hidden', !multi);
+        }
+        function stepImageModal(dir) {
+            const n = currentGallery.imgs.length;
+            if (n < 2) return;
+            currentGallery.index = (currentGallery.index + dir + n) % n;
+            showGalleryImage();
         }
         function closeImageModal() {
             const imgModal = document.getElementById('image-modal');
             imgModal.classList.add('hidden'); imgModal.classList.remove('flex');
         }
+        document.addEventListener('keydown', e => {
+            const imgModal = document.getElementById('image-modal');
+            if (!imgModal || imgModal.classList.contains('hidden')) return;
+            if (e.key === 'ArrowLeft') stepImageModal(-1);
+            else if (e.key === 'ArrowRight') stepImageModal(1);
+            else if (e.key === 'Escape') closeImageModal();
+        });
+        (function () {
+            let startX = null;
+            const imgModal = document.getElementById('image-modal');
+            if (!imgModal) return;
+            imgModal.addEventListener('touchstart', e => { startX = e.touches[0].clientX; }, { passive: true });
+            imgModal.addEventListener('touchend', e => {
+                if (startX === null) return;
+                const dx = e.changedTouches[0].clientX - startX;
+                startX = null;
+                if (Math.abs(dx) > 50) stepImageModal(dx < 0 ? 1 : -1);
+            }, { passive: true });
+        })();
 
         // --- 파일 저장소: 미리보기 모달 ---
         function openFilePreview(src, title) {
