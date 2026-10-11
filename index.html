@@ -1069,8 +1069,13 @@
             const list = document.getElementById('log-list');
             if (!list) return;
             list.innerHTML = '';
-            // 최신순: Firebase push ID는 생성 시각 순으로 증가하므로 id 내림차순 = 최신 기록이 위
-            logs.sort((a, b) => (b.id || '').localeCompare(a.id || ''));
+            // 최신 날짜순(같은 날짜면 나중에 작성한 것이 위). 날짜가 없는 옛 기록은 작성시각에서 날짜를 추출
+            const logSortDate = l => {
+                if (l.date) return l.date;
+                const m = (l.createdAt || '').match(/(\d{4})\.\s*(\d{1,2})\.\s*(\d{1,2})/);
+                return m ? `${m[1]}-${m[2].padStart(2, '0')}-${m[3].padStart(2, '0')}` : '';
+            };
+            logs.sort((a, b) => logSortDate(b).localeCompare(logSortDate(a)) || (b.id || '').localeCompare(a.id || ''));
 
             if (logs.length === 0) {
                 list.innerHTML = '<p class="text-slate-500 text-center py-8 text-sm">등록된 기록이 없습니다.</p>';
